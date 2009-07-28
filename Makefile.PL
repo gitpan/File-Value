@@ -6,7 +6,7 @@ WriteMakefile(
     EXE_FILES		=> [ 'snag' ],
     NAME                => 'File::Value',
     AUTHOR              => 'John A. Kunze <jak@ucop.edu>',
-    VERSION_FROM        => 'lib/File/Value.pm',
+    VERSION_FROM        => 'VERSION',
     ABSTRACT_FROM       => 'lib/File/Value.pm',
     ($ExtUtils::MakeMaker::VERSION >= 6.3002
       ? ('LICENSE'=> 'Apache2')

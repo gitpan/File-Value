@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               File-Value
-version:            0.12
+version:            0.13
 abstract:           manipulate file name or content as a single value (V0.01)
 author:
     - John A. Kunze <jak@ucop.edu>

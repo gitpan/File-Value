@@ -25,6 +25,11 @@ $VERSION = sprintf "%d.%02d", q$Name: Release-0-12 $ =~ /Release-(\d+)-(\d+)/;
  print elide($title, "${displaywidth}m")      # Example: fit long title
         if (length($title) > $displaywidth);  # by eliding from middle
 
+ high_version()            # scroll down in page for docs on these
+ snag_dir()
+ snag_file()
+ snag_version()
+
 =head1 DESCRIPTION
 
 These are general purpose routines that support the treatment of a file's

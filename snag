@@ -1,0 +1,214 @@
+#!/bin/sh
+#! -*- perl -*-
+eval 'exec perl -x -S $0 ${1+"$@"} ;'
+	if 0;
+# The above make for portable Perl startup honoring PATH and emacs.  Don't
+# change lightly.  Options may be inserted before "-x".  For background see
+# 'perldoc perlrun' and http://cr.yp.to/slashpackage/studies/findingperl/7 .
+# For development consider:  alias tp='perl -x -Mblib', eg, tp foo t/foo.t
+
+use strict;
+use warnings;
+
+=for roff
+.nr PS 12p
+.nr VS 14.4p
+
+=head1 NAME
+
+snag - reserve or find version-aware file and directory names
+
+=head1 SYNOPSIS
+
+=over
+
+=item B<snag> [B<-fvh>] I<name>[/] ...
+
+=item B<snag> [B<-fvh>] [B<--lshigh | --next>] I<name>[/] ...
+
+=back
+
+=head1 DESCRIPTION
+
+The B<snag> command creates node I<name> as a file, or as a directory if
+I<name> ends with a '/' character.  It outputs the created node name on
+success and exits with status 0.  Unlike the C<touch(1)> command, B<snag>
+will normally fail if the node exists (exit status 1) before it tries to
+create it.  Other errors result in exit status 2 and a message on stderr.
+If B<-f> (force) is given, an attempt will be made first to remove a
+pre-existing node.
+
+In the presence of B<--lshigh> or B<--next>, the node I<name> is considered
+a base for numbered version names that end in digits.  In this case, any
+terminal digits in I<name> ("1" by default if there are no terminal
+digits) are interpreted specially.
+
+If B<--lshigh> is given, no node will be created, but the highest existing
+numbered version will be returned, where candidate versions will be any
+node name beginning with base I<name> and ending in any string of digits.
+
+If B<--next> is given, an attempt will be made to create the next highest
+numbered version.  If a race condition is detected, several attempts will
+be made.  The next highest version is determined by first finding the
+highest current version number and adding 1 to it.  It is an error if the
+type of the requested version (file or directory) is different from that
+of the current high version unless B<--force> is given.
+
+=head1 EXAMPLES
+
+  $ snag v4/
+  v4/
+  $ echo `for i in a b c; do snag --next v001/; done`
+  v005/ v006/ v007/
+  $ snag --lshigh v2
+  v007/
+  $ snag foo
+  foo
+  $ snag --next foo.; snag --next foo.
+  foo.1
+  foo.2
+
+=cut
+
+my $VERSION;
+$VERSION = sprintf "%d.%02d", q$Revision: 0.12 $ =~ /(\d+)/g;
+
+use Getopt::Long qw(:config bundling_override);
+use Pod::Usage;
+
+use File::Value;
+
+my %opt = (
+	force		=> 0,
+	help		=> 0,
+	lshigh		=> 0,
+	man		=> 0,
+	next		=> 0,
+	version		=> 0,
+	verbose		=> 0,
+);
+
+# main
+{
+	GetOptions(\%opt,
+		'force|f',
+		'help|?',
+		'lshigh',
+		'man',
+		'next',
+		'version',
+		'verbose|v',
+	) or pod2usage(1);
+
+	pod2usage(1)
+		if $opt{help};
+	pod2usage(-exitstatus => 0, -verbose => 2)
+		if $opt{man};
+	print "$VERSION\n" and exit(0)
+		if $opt{version};
+	pod2usage("$0: only one of --lshigh or --next can be specified")
+		if $opt{lshigh} && $opt{next};
+	pod2usage("$0: no file or directory names given")
+		unless @ARGV;
+
+	foreach my $node (@ARGV) {
+
+		my $as_dir = ($node =~ s,/+$,,);	# a dir if ends in '/'
+		my $prnode = $node			# print-friendly name
+			. ($as_dir ? '/' : '');		# has '/' added back
+
+		my ($n, $msg);
+		if ($opt{lshigh}) {
+			# we're only asked to report the high version
+			$node =~ s/\d+$//;
+			($n, $msg) = high_version($node);
+			if ($n == -1) {
+				print STDERR
+					"$prnode: has no numbered versions\n";
+				exit 2;
+			}
+			# got it, $msg is the node name
+			print "$msg", (-d $msg ? '/' : ''), "\n";
+			next;
+			# XXX support "low" version ??
+			# XXX support "missing" versions ??
+		}
+		elsif ($opt{next}) {
+			($n, $msg) = snag_version($node, $as_dir,
+				! $opt{force});
+			if ($n == -1) {
+				print STDERR "$prnode: $msg\n";
+				exit 2;
+			}
+			# got it, $msg is the node name
+			print "$msg", ($as_dir ? '/' : ''), "\n";
+			next;
+		}
+		else {				# simple snag
+			if ($opt{force} && -e $node) {
+				-d $node and
+					rmdir($node) || die "$node: $!"
+				or
+					unlink($node) || die "$node: $!"
+				;
+			}
+			$msg = $as_dir ?
+				snag_dir($node) : snag_file($node);
+			if ($msg eq '') {
+				print "$prnode\n";
+				next;
+			}
+			if ($msg eq '1') {
+				print "$prnode already exists";
+				print ", but as a ", ($as_dir ?
+						"file" : "directory")
+					if ($as_dir != -d $node);
+				print "\n";
+				exit 1;
+			}
+			print STDERR "$prnode: $msg\n";
+			exit 2;
+		}
+	}
+	exit 0;
+}
+
+=head1 OPTIONS
+
+=over
+
+=item B<-h>, B<--help>
+
+Print extended help documentation.
+
+=item B<--man>
+
+Print full documentation.
+
+=item B<--version>
+
+Print the current version number and exit.
+
+=back
+
+=head1 SEE ALSO
+
+touch(1)
+
+=head1 AUTHOR
+
+John Kunze I<jak at ucop dot edu>
+
+=head1 COPYRIGHT
+
+  Copyright 2009 UC Regents.  Open source Apache License, Version 2.
+
+=begin CPAN
+
+=head1 README
+
+=head1 SCRIPT CATEGORIES
+
+=end CPAN
+
+=cut
