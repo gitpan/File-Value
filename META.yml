@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name:               File-Value
-version:            0.13
-abstract:           manipulate file name or content as a single value (V0.01)
+version:            0.14
+abstract:           manipulate file name or content as a single value (V0.12)
 author:
     - John A. Kunze <jak@ucop.edu>
 license:            Apache2
@@ -11,7 +11,10 @@ configure_requires:
 build_requires:
     ExtUtils::MakeMaker:  0
 requires:
-    Test::More:  0
+    Fcntl:         0
+    File::Glob:    0
+    Getopt::Long:  0
+    Pod::Usage:    0
 no_index:
     directory:
         - t

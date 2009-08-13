@@ -16,7 +16,10 @@ WriteMakefile(
     },
     PL_FILES            => {},
     PREREQ_PM => {
-        'Test::More' => 0,
+        'File::Glob' => 0,
+        'Fcntl' => 0,
+        'Pod::Usage' => 0,
+        'Getopt::Long' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'File-Value-*' },

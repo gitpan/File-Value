@@ -24,7 +24,7 @@ snag - reserve or find version-aware file and directory names
 
 =item B<snag> [B<-fvh>] I<name>[/] ...
 
-=item B<snag> [B<-fvh>] [B<--lshigh | --next>] I<name>[/] ...
+=item B<snag> [B<-fvh>] [B<--lshigh | --lslow | --next>] I<name>[/] ...
 
 =back
 
@@ -38,14 +38,16 @@ create it.  Other errors result in exit status 2 and a message on stderr.
 If B<-f> (force) is given, an attempt will be made first to remove a
 pre-existing node.
 
-In the presence of B<--lshigh> or B<--next>, the node I<name> is considered
-a base for numbered version names that end in digits.  In this case, any
-terminal digits in I<name> ("1" by default if there are no terminal
-digits) are interpreted specially.
+In the presence of B<--lshigh>, B<--lslow>, or B<--next>, the node
+I<name> is considered a base for numbered version names that end in
+digits.  In this case, any terminal digits in I<name> ("1" by default if
+there are no terminal digits) are interpreted specially.
 
-If B<--lshigh> is given, no node will be created, but the highest existing
-numbered version will be returned, where candidate versions will be any
-node name beginning with base I<name> and ending in any string of digits.
+If B<--lshigh> ("list high")is given, no node will be created, but the
+highest existing numbered version will be returned, where candidate
+versions will be any node name beginning with base I<name> and ending in
+any string of digits.  Similarly for B<--lslow> ("list low"), but for
+the lowest existing numbered version.
 
 If B<--next> is given, an attempt will be made to create the next highest
 numbered version.  If a race condition is detected, several attempts will
@@ -71,7 +73,7 @@ of the current high version unless B<--force> is given.
 =cut
 
 my $VERSION;
-$VERSION = sprintf "%d.%02d", q$Revision: 0.12 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 0.14 $ =~ /(\d+)/g;
 
 use Getopt::Long qw(:config bundling_override);
 use Pod::Usage;
@@ -82,6 +84,7 @@ my %opt = (
 	force		=> 0,
 	help		=> 0,
 	lshigh		=> 0,
+	lslow		=> 0,
 	man		=> 0,
 	next		=> 0,
 	version		=> 0,
@@ -94,6 +97,7 @@ my %opt = (
 		'force|f',
 		'help|?',
 		'lshigh',
+		'lslow',
 		'man',
 		'next',
 		'version',
@@ -106,8 +110,8 @@ my %opt = (
 		if $opt{man};
 	print "$VERSION\n" and exit(0)
 		if $opt{version};
-	pod2usage("$0: only one of --lshigh or --next can be specified")
-		if $opt{lshigh} && $opt{next};
+	pod2usage("$0: --next cannot be given with --lshigh or --lslow")
+		if ($opt{lshigh} || $opt{lslow}) && $opt{next};
 	pod2usage("$0: no file or directory names given")
 		unless @ARGV;
 
@@ -118,20 +122,32 @@ my %opt = (
 			. ($as_dir ? '/' : '');		# has '/' added back
 
 		my ($n, $msg);
-		if ($opt{lshigh}) {
-			# we're only asked to report the high version
+		if ($opt{lshigh} || $opt{lslow}) {
+			# we're only asked to report either or both of
+			# the low version and the high version
+			my @nodes;
 			$node =~ s/\d+$//;
-			($n, $msg) = high_version($node);
-			if ($n == -1) {
-				print STDERR
-					"$prnode: has no numbered versions\n";
-				exit 2;
+			if ($opt{lslow}) {
+				($n, $msg) = list_low_version($node);
+				$n == -1 and print(STDERR
+					"$prnode: has no numbered versions\n"),
+					exit 2
+				;
+				push @nodes, $msg;	# got it, $msg is node
 			}
-			# got it, $msg is the node name
-			print "$msg", (-d $msg ? '/' : ''), "\n";
+			if ($opt{lshigh}) {
+				($n, $msg) = list_high_version($node);
+				$n == -1 and print(STDERR
+					"$prnode: has no numbered versions\n"),
+					exit 2
+				;
+				push @nodes, $msg;	# got it, $msg is node
+			}
+			print join(" ",
+				grep { (-d $_ and s,$,/,) or $_ } @nodes),
+				"\n";
 			next;
-			# XXX support "low" version ??
-			# XXX support "missing" versions ??
+			# yyy support "missing" versions ??
 		}
 		elsif ($opt{next}) {
 			($n, $msg) = snag_version($node, $as_dir,

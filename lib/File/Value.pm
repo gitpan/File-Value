@@ -5,27 +5,28 @@ use strict;
 
 =head1 NAME
 
-File::Value - manipulate file name or content as a single value (V0.01)
+File::Value - manipulate file name or content as a single value (V0.12)
 
 =cut
 
 our $VERSION;
-$VERSION = sprintf "%d.%02d", q$Name: Release-0-12 $ =~ /Release-(\d+)-(\d+)/;
+$VERSION = sprintf "%d.%02d", q$Name: Release-0-14 $ =~ /Release-(\d+)-(\d+)/;
 
 =head1 SYNOPSIS
 
  use File::Value;           # to import routines into a Perl script
 
  ($msg = file_value(">pid_file", $pid))  # Example: store a file value
-         and die("pid_file: $msg\n");
+         and die "pid_file: $msg\n";
   ...
  ($msg = file_value("<pid_file", $pid))  # Example: read a file value
-         and die("pid_file: $msg\n");
+         and die "pid_file: $msg\n";
 
  print elide($title, "${displaywidth}m")      # Example: fit long title
-        if (length($title) > $displaywidth);  # by eliding from middle
+        if length($title) > $displaywidth;    # by eliding from middle
 
- high_version()            # scroll down in page for docs on these
+ list_high_version()            # scroll down in page for docs on these
+ list_low_version()
  snag_dir()
  snag_file()
  snag_version()
@@ -48,7 +49,8 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(
 	elide
 	file_value
-	high_version
+	list_high_version
+	list_low_version
 	snag_dir
 	snag_file
 	snag_version
@@ -161,8 +163,7 @@ sub file_value { my( $file, $value, $how, $length )=@_;
 	my $ret_value = \$_[1];
 	use constant OK => "";		# empty string on return means success
 
-	! defined($file) and
-		return "needs a file name";
+	! defined($file)	and return "needs a file name";
 
 	# make caller be explicit about whether doing read/write/append
 	#
@@ -170,19 +171,30 @@ sub file_value { my( $file, $value, $how, $length )=@_;
 		return "file ($file) must begin with '<', '>', or '>>'";
 	my ($mode, $statfname) = ($1, $2);
 
-	# we're to do value-to-file
-	# in this case we ignore $how and $length
-	# XXX should we not support a trim??
-	if ($mode =~ />>?/) {
+	$how ||= "trim";		# trim (def), raw, untaint
+	$how = lc($how);
+	$how ne "trim" && $how ne "raw" && $how ne "untaint" and
+		return "third arg ($how) must be one of: trim, raw, or untaint";
+
+
+	if ($mode =~ />>?/) {	# if we're doing value-to-file (> or >>)
+		# ignore $how and $length, but we need specified $value
 		! defined($value) and
 			return "needs a value to put in '$file'";
+		# for $how, here we only understand "trim" or "raw", but
+		# "trim" removes initial and final \n, adding one final \n
+		if ($how eq "trim") {
+			$value =~ s/^\s+//s;
+			$value =~ s/\s+$/\n/s;
+		}
 		! open(OUT, $file) and
 			return "$statfname: $!";
 		my $r = print OUT $value;
 		close(OUT);
 		return ($r ? OK : "write failed: $!");
 	}
-	# If we get here, we're to do file-to-value.
+
+	# If we get here, we're doing file-to-value case.
 
 	my $go_for_it = (defined($length) && $length eq "0" ? 1 : 0);
 	my $statlength = undef;
@@ -202,11 +214,6 @@ sub file_value { my( $file, $value, $how, $length )=@_;
 	else {
 		$length = $ridiculous;
 	}
-
-	$how ||= "trim";		# trim (def), raw, untaint
-	$how = lc($how);
-	$how ne "trim" && $how ne "raw" && $how ne "untaint" and
-		return "third arg ($how) must be one of: trim, raw, or untaint";
 
 	! open(IN, $file) and
 		return "$statfname: $!";
@@ -239,7 +246,7 @@ sub file_value { my( $file, $value, $how, $length )=@_;
 	return OK;
 }
 
-=head2 high_version( $template )
+=head2 list_high_version( $template )
 
 Return the number and name of the highest numbered existing version
 of $template (defaults to ""), where numbered versions have the form
@@ -251,7 +258,7 @@ foo.v129 .  Return (-1, undef) if no numbered versions exist.
 use File::Glob ':glob';		# standard use of module, which we need
 				# as vanilla glob won't match whitespace
 
-sub high_version { my( $template )=@_;
+sub list_high_version { my( $template )=@_;
 
 	$template ||= "";
 	my ($max, $n, $fname) = (-1, -1, undef);
@@ -261,6 +268,29 @@ sub high_version { my( $template )=@_;
 			($max, $fname) = ($n, $_);
 	}
 	return ($max, $fname);
+}
+
+=head2 list_low_version( $template )
+
+Similar to list_high_version(), but return the number and name of the lowest
+numbered existing version.
+
+=cut
+
+# Tempting for program maintenance to combine computation of low and high,
+# but that would make computation of the high (by far the most common call)
+# pay a performance penalty for a seldom used value.  So we separate.
+#
+sub list_low_version { my( $template )=@_;
+
+	$template ||= "";
+	my ($min, $n, $fname) = (-1, -1, undef);
+	for (grep(   /$template\d+$/, bsd_glob("$template*")   )) {
+		($n) = m/(\d+)$/;	# extract number for comparisons
+		$min > $n || $min < 0 and
+			($min, $fname) = ($n, $_);
+	}
+	return ($min, $fname);
 }
 
 =head2 snag_version( $template[, $as_dir[, $no_type_mismatch]] )
@@ -313,7 +343,7 @@ sub snag_version { my( $template, $as_dir, $no_type_mismatch )=@_;
 	my $vfmt = '%0'. length($digits) . 'd';
 
 	$no_type_mismatch ||= 0;	# default this arg to false
-	my ($hnum, $hnode) = high_version($template);
+	my ($hnum, $hnode) = list_high_version($template);
 	if ($hnum == -1) {
 		$as_dir ||= 0;		# default node type is "file"
 		$hnum = $digits - 1;	# number we'll start trying for
