@@ -1,6 +1,9 @@
+use 5.000000;
 use strict;
 use warnings;
 use ExtUtils::MakeMaker;
+# See lib/ExtUtils/MakeMaker.pm for details of how to influence
+# the contents of the Makefile that is written.
 
 WriteMakefile(
     EXE_FILES		=> [ 'snag' ],
@@ -16,10 +19,12 @@ WriteMakefile(
     },
     PL_FILES            => {},
     PREREQ_PM => {
-        'File::Glob' => 0,
-        'Fcntl' => 0,
-        'Pod::Usage' => 0,
-        'Getopt::Long' => 0,
+        'Getopt::Long'	=> 0,
+        'File::Glob'	=> 0,
+        'Pod::Usage'	=> 0,
+        'Fcntl'		=> 0,
+	'warnings'	=> 0,
+	'strict'	=> 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'File-Value-*' },

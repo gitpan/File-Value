@@ -7,6 +7,7 @@ my $script = "snag";		# script we're testing
 # XXXX this is latest as of 09.08.31
 #### start boilerplate for script name and temporary directory support
 
+$ENV{'SHELL'} = "/bin/sh";
 my $td = "td_$script";		# temporary test directory named for script
 # Depending on how circs, use blib, but prepare to use lib as fallback.
 my $blib = (-e "blib" || -e "../blib" ?	"-Mblib" : "-Ilib");

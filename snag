@@ -73,7 +73,7 @@ of the current high version unless B<--force> is given.
 =cut
 
 my $VERSION;
-$VERSION = sprintf "%d.%02d", q$Revision: 0.14 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 0.15 $ =~ /(\d+)/g;
 
 use Getopt::Long qw(:config bundling_override);
 use Pod::Usage;

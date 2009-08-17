@@ -10,7 +10,7 @@ File::Value - manipulate file name or content as a single value (V0.12)
 =cut
 
 our $VERSION;
-$VERSION = sprintf "%d.%02d", q$Name: Release-0-14 $ =~ /Release-(\d+)-(\d+)/;
+$VERSION = sprintf "%d.%02d", q$Name: Release-0-15 $ =~ /Release-(\d+)-(\d+)/;
 
 =head1 SYNOPSIS
 
