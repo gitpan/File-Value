@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               File-Value
-version:            0.15
+version:            0.16
 abstract:           manipulate file name or content as a single value (V0.12)
 author:
     - John A. Kunze <jak@ucop.edu>
@@ -15,8 +15,6 @@ requires:
     File::Glob:    0
     Getopt::Long:  0
     Pod::Usage:    0
-    strict:        0
-    warnings:      0
 no_index:
     directory:
         - t

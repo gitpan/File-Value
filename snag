@@ -7,77 +7,14 @@ eval 'exec perl -x -S $0 ${1+"$@"} ;'
 # 'perldoc perlrun' and http://cr.yp.to/slashpackage/studies/findingperl/7 .
 # For development consider:  alias tp='perl -x -Mblib', eg, tp foo t/foo.t
 
+use 5.006;
 use strict;
 use warnings;
 
-=for roff
-.nr PS 12p
-.nr VS 14.4p
-
-=head1 NAME
-
-snag - reserve or find version-aware file and directory names
-
-=head1 SYNOPSIS
-
-=over
-
-=item B<snag> [B<-fvh>] I<name>[/] ...
-
-=item B<snag> [B<-fvh>] [B<--lshigh | --lslow | --next>] I<name>[/] ...
-
-=back
-
-=head1 DESCRIPTION
-
-The B<snag> command creates node I<name> as a file, or as a directory if
-I<name> ends with a '/' character.  It outputs the created node name on
-success and exits with status 0.  Unlike the C<touch(1)> command, B<snag>
-will normally fail if the node exists (exit status 1) before it tries to
-create it.  Other errors result in exit status 2 and a message on stderr.
-If B<-f> (force) is given, an attempt will be made first to remove a
-pre-existing node.
-
-In the presence of B<--lshigh>, B<--lslow>, or B<--next>, the node
-I<name> is considered a base for numbered version names that end in
-digits.  In this case, any terminal digits in I<name> ("1" by default if
-there are no terminal digits) are interpreted specially.
-
-If B<--lshigh> ("list high")is given, no node will be created, but the
-highest existing numbered version will be returned, where candidate
-versions will be any node name beginning with base I<name> and ending in
-any string of digits.  Similarly for B<--lslow> ("list low"), but for
-the lowest existing numbered version.
-
-If B<--next> is given, an attempt will be made to create the next highest
-numbered version.  If a race condition is detected, several attempts will
-be made.  The next highest version is determined by first finding the
-highest current version number and adding 1 to it.  It is an error if the
-type of the requested version (file or directory) is different from that
-of the current high version unless B<--force> is given.
-
-=head1 EXAMPLES
-
-  $ snag v4/
-  v4/
-  $ echo `for i in a b c; do snag --next v001/; done`
-  v005/ v006/ v007/
-  $ snag --lshigh v2
-  v007/
-  $ snag foo
-  foo
-  $ snag --next foo.; snag --next foo.
-  foo.1
-  foo.2
-
-=cut
-
-my $VERSION;
-$VERSION = sprintf "%d.%02d", q$Revision: 0.15 $ =~ /(\d+)/g;
+my $VERSION = $File::Value::VERSION;
 
 use Getopt::Long qw(:config bundling_override);
 use Pod::Usage;
-
 use File::Value;
 
 my %opt = (
@@ -188,6 +125,66 @@ my %opt = (
 	}
 	exit 0;
 }
+
+=for roff
+.nr PS 12p
+.nr VS 14.4p
+
+=head1 NAME
+
+snag - reserve or find version-aware file and directory names
+
+=head1 SYNOPSIS
+
+=over
+
+=item B<snag> [B<-fvh>] I<name>[/] ...
+
+=item B<snag> [B<-fvh>] [B<--lshigh | --lslow | --next>] I<name>[/] ...
+
+=back
+
+=head1 DESCRIPTION
+
+The B<snag> command creates node I<name> as a file, or as a directory if
+I<name> ends with a '/' character.  It outputs the created node name on
+success and exits with status 0.  Unlike the C<touch(1)> command, B<snag>
+will normally fail if the node exists (exit status 1) before it tries to
+create it.  Other errors result in exit status 2 and a message on stderr.
+If B<-f> (force) is given, an attempt will be made first to remove a
+pre-existing node.
+
+In the presence of B<--lshigh>, B<--lslow>, or B<--next>, the node
+I<name> is considered a base for numbered version names that end in
+digits.  In this case, any terminal digits in I<name> ("1" by default if
+there are no terminal digits) are interpreted specially.
+
+If B<--lshigh> ("list high")is given, no node will be created, but the
+highest existing numbered version will be returned, where candidate
+versions will be any node name beginning with base I<name> and ending in
+any string of digits.  Similarly for B<--lslow> ("list low"), but for
+the lowest existing numbered version.
+
+If B<--next> is given, an attempt will be made to create the next highest
+numbered version.  If a race condition is detected, several attempts will
+be made.  The next highest version is determined by first finding the
+highest current version number and adding 1 to it.  It is an error if the
+type of the requested version (file or directory) is different from that
+of the current high version unless B<--force> is given.
+
+=head1 EXAMPLES
+
+  $ snag v4/
+  v4/
+  $ echo `for i in a b c; do snag --next v001/; done`
+  v005/ v006/ v007/
+  $ snag --lshigh v2
+  v007/
+  $ snag foo
+  foo
+  $ snag --next foo.; snag --next foo.
+  foo.1
+  foo.2
 
 =head1 OPTIONS
 

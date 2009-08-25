@@ -1,3 +1,4 @@
+use 5.006;
 use Test::More qw( no_plan );
 use warnings;
 use strict;
@@ -125,9 +126,14 @@ is $x, "$td/foo", "snag simple file";
 
 ok(-f "$td/foo", "file is a file");
 
+use Errno;
 $x = `$cmd $td/bar/foo`;
 chop($x);
-like $x, qr/.o such file or directory/, "non-existent intermediate dir";
+# Avoid using english diagnostic for comparison (fails in other locales)
+#like $x, qr/.o such file or directory/, "non-existent intermediate dir";
+$! = 2;		# expect this error, but need locale-based string
+my $z = "" . $! . "";	# hope this forces string context
+like $x, qr/$z/, "non-existent intermediate dir";
 
 $x = `$cmd $td/bar/`;
 chop($x);

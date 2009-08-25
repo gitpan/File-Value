@@ -1,4 +1,4 @@
-use 5.000000;
+use 5.006;
 use strict;
 use warnings;
 use ExtUtils::MakeMaker;
@@ -15,7 +15,7 @@ WriteMakefile(
       ? ('LICENSE'=> 'Apache2')
       : ()),
     PM			=> {
-    	'lib/File/Value.pm' => 'blib/lib/File/Value.pm',
+    	'lib/File/Value.pm'	=> 'blib/lib/File/Value.pm',
     },
     PL_FILES            => {},
     PREREQ_PM => {
@@ -23,8 +23,6 @@ WriteMakefile(
         'File::Glob'	=> 0,
         'Pod::Usage'	=> 0,
         'Fcntl'		=> 0,
-	'warnings'	=> 0,
-	'strict'	=> 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'File-Value-*' },
