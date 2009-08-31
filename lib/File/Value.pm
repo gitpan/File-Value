@@ -5,7 +5,7 @@ use warnings;
 use strict;
 
 our $VERSION;
-$VERSION = sprintf "%d.%02d", q$Name: Release-0-16 $ =~ /Release-(\d+)-(\d+)/;
+$VERSION = sprintf "%d.%02d", q$Name: Release-0-17 $ =~ /Release-(\d+)-(\d+)/;
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -284,7 +284,7 @@ __END__
 
 =head1 NAME
 
-File::Value - manipulate file name or content as a single value (V0.12)
+File::Value - manipulate file name or content as a single value
 
 =head1 SYNOPSIS
 

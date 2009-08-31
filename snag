@@ -1,11 +1,4 @@
-#!/bin/sh
-#! -*- perl -*-
-eval 'exec perl -x -S $0 ${1+"$@"} ;'
-	if 0;
-# The above make for portable Perl startup honoring PATH and emacs.  Don't
-# change lightly.  Options may be inserted before "-x".  For background see
-# 'perldoc perlrun' and http://cr.yp.to/slashpackage/studies/findingperl/7 .
-# For development consider:  alias tp='perl -x -Mblib', eg, tp foo t/foo.t
+#!/usr/bin/perl
 
 use 5.006;
 use strict;
@@ -16,6 +9,15 @@ my $VERSION = $File::Value::VERSION;
 use Getopt::Long qw(:config bundling_override);
 use Pod::Usage;
 use File::Value;
+
+#foo #!/bin/sh
+#foo #! -*- perl -*-
+#foo eval 'exec perl -x -S $0 ${1+"$@"} ;'
+#foo 	if 0;
+# The above make for portable Perl startup honoring PATH and emacs.  Don't
+# change lightly.  Options may be inserted before "-x".  For background see
+# 'perldoc perlrun' and http://cr.yp.to/slashpackage/studies/findingperl/7 .
+# For development consider:  alias tp='perl -x -Mblib', eg, tp foo t/foo.t
 
 my %opt = (
 	force		=> 0,

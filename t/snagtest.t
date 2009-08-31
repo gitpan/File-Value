@@ -1,28 +1,38 @@
 use 5.006;
 use Test::More qw( no_plan );
-use warnings;
 use strict;
+use warnings;
 
 my $script = "snag";		# script we're testing
 
-# XXXX this is latest as of 09.08.31
+# as of 2009.08.27  (SHELL stuff, remake_td, Config perlpath)
 #### start boilerplate for script name and temporary directory support
 
-$ENV{'SHELL'} = "/bin/sh";
+use Config;
+$ENV{SHELL} = "/bin/sh";
 my $td = "td_$script";		# temporary test directory named for script
-# Depending on how circs, use blib, but prepare to use lib as fallback.
+# Depending on circs, use blib, but prepare to use lib as fallback.
 my $blib = (-e "blib" || -e "../blib" ?	"-Mblib" : "-Ilib");
 my $bin = ($blib eq "-Mblib" ?		# path to testable script
 	"blib/script/" : "") . $script;
-my $cmd = "2>&1 perl -x $blib " .	# command to run, capturing stderr
-	(-x $bin ? $bin : "../$bin") . " ";	# exit status will be in "$?"
+my $perl = $Config{perlpath} . $Config{_exe};	# perl used in testing
+my $cmd = "2>&1 $perl -x $blib " .	# command to run, capturing stderr
+	(-x $bin ? $bin : "../$bin") . " ";	# exit status in $? >> 8
+
+my ($rawstatus, $status);		# "shell status" version of "is"
+sub shellst_is { my( $expected, $output, $label )=@_;
+	$status = ($rawstatus = $?) >> 8;
+	$status != $expected and	# if not what we thought, then we're
+		print $output, "\n";	# likely interested in seeing output
+	return is($status, $expected, $label);
+}
 
 use File::Path;
-sub mk_td {		# make $td with possible cleanup
-	-e $td			and rm_td();
+sub remake_td {		# make $td with possible cleanup
+	-e $td			and remove_td();
 	mkdir($td)		or die "$td: couldn't mkdir: $!";
 }
-sub rm_td {		# remove $td but make sure $td isn't set to "."
+sub remove_td {		# remove $td but make sure $td isn't set to "."
 	! $td || $td eq "."	and die "bad dirname \$td=$td";
 	eval { rmtree($td); };
 	$@			and die "$td: couldn't remove: $@";
@@ -35,7 +45,7 @@ use File::Value;
 
 {	# file_value tests
 
-mk_td();
+remake_td();
 my $x = '   /hi;!echo *; e/fred/foo/pbase        ';
 my $y;
 
@@ -79,7 +89,7 @@ file_value(">$td/fvtest", "   foo		\n\n\n");
 file_value("<$td/fvtest", $x, "raw");
 is $x, "foo\n", 'trim on write';
 
-rm_td();
+remove_td();
 
 }
 
@@ -117,7 +127,7 @@ is elide("abcdefghijklmnopqrstuvwxyz", "22m+4%", "__"),
 }
 
 {
-mk_td();
+remake_td();
 my $x;
 
 $x = `$cmd $td/foo`;
@@ -175,7 +185,7 @@ $x = `$cmd --lslow $td/zaf1`;
 chop($x);
 is $x, "$td/zaf500", "list low version";
 
-rm_td();
+remove_td();
 }
 
 #done_testing;
