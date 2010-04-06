@@ -16,7 +16,7 @@ my $blib = (-e "blib" || -e "../blib" ?	"-Mblib" : "-Ilib");
 my $bin = ($blib eq "-Mblib" ?		# path to testable script
 	"blib/script/" : "") . $script;
 my $perl = $Config{perlpath} . $Config{_exe};	# perl used in testing
-my $cmd = "2>&1 $perl -x $blib " .	# command to run, capturing stderr
+my $cmd = "2>&1 $perl $blib " .		# command to run, capturing stderr
 	(-x $bin ? $bin : "../$bin") . " ";	# exit status in $? >> 8
 
 my ($rawstatus, $status);		# "shell status" version of "is"
@@ -40,91 +40,7 @@ sub remove_td {		# remove $td but make sure $td isn't set to "."
 
 #### end boilerplate
 
-# xxx what we're actually testing
 use File::Value;
-
-{	# file_value tests
-
-remake_td();
-my $x = '   /hi;!echo *; e/fred/foo/pbase        ';
-my $y;
-
-is file_value(">$td/fvtest", $x, "raw"), "", 'write returns ""';
-
-is file_value("<$td/fvtest", $y, "raw"), "", 'read returns ""';
-
-is $x, $y, 'raw read of what was written';
-
-my $z = (-s "$td/fvtest");
-is $z, length($x), "all bytes written";
-
-file_value("<$td/fvtest", $x);
-is $x, '/hi;!echo *; e/fred/foo/pbase', 'default trim';
-
-file_value("<$td/fvtest", $x, "trim");
-is $x, '/hi;!echo *; e/fred/foo/pbase', 'explicit trim';
-
-file_value("<$td/fvtest", $x, "untaint");
-is $x, 'hi', 'untaint test';
-
-file_value("<$td/fvtest", $x, "trim", 0);
-is $x, '/hi;!echo *; e/fred/foo/pbase', 'trim, unlimited';
-
-file_value("<$td/fvtest", $x, "trim", 12);
-is $x, '/hi;!echo', 'trim, max 12';
-
-file_value("<$td/fvtest", $x, "trim", 12000);
-is $x, '/hi;!echo *; e/fred/foo/pbase', 'trim, max 12000';
-
-like file_value("<$td/fvtest", $x, "foo"), '/must be one of/',
-'error message test';
-
-like file_value("$td/fvtest", $x),
-'/file .*fvtest. must begin.*/', 'force use of >, <, or >>';
-
-is file_value(">$td/Whoa\\dude:!
-  Adventures of HuckleBerry Finn", "dummy"), "", 'write to weird filename';
-
-file_value(">$td/fvtest", "   foo		\n\n\n");
-file_value("<$td/fvtest", $x, "raw");
-is $x, "foo\n", 'trim on write';
-
-remove_td();
-
-}
-
-#########################
-
-{	# elide tests
-
-is elide("abcdefghi"), "abcdefghi", 'simple no-op';
-
-is elide("abcdefghijklmnopqrstuvwxyz", "7m", ".."),
-"ab..xyz", 'truncate explicit, middle';
-
-is elide("abcdefghijklmnopqrstuvwxyz"),
-"abcdefghijklmn..", 'truncate implicit, end';
-
-is elide("abcdefghijklmnopqrstuvwxyz", 22),
-"abcdefghijklmnopqrst..", 'truncate explicit, end';
-
-is elide("abcdefghijklmnopqrstuvwxyz", 22, ".."),
-"abcdefghijklmnopqrst..", 'truncate explicit, end, explicit ellipsis';
-
-is elide("abcdefghijklmnopqrstuvwxyz", "22m"),
-"abcdefghi...qrstuvwxyz", 'truncate explicit, middle';
-
-is elide("abcdefghijklmnopqrstuvwxyz", "22m", ".."),
-"abcdefghij..qrstuvwxyz", 'truncate explicit, middle, explicit ellipsis';
-
-is elide("abcdefghijklmnopqrstuvwxyz", "22s"),
-"..ghijklmnopqrstuvwxyz", 'truncate explicit, start';
-
-# XXXX this +4% test isn't really implemented
-is elide("abcdefghijklmnopqrstuvwxyz", "22m+4%", "__"),
-"abcdefghij__qrstuvwxyz", 'truncate explicit, middle, alt. ellipsis';
-
-}
 
 {
 remake_td();
@@ -157,23 +73,23 @@ is $x, "$td/bar", "snag file, forcing replace of directory";
 
 ok(-f "$td/bar", "replacement is a file");
 
-$x = `$cmd --next $td/bar`;
+$x = `$cmd --mknext $td/bar`;
 chop($x);
 is $x, "$td/bar1", "snag next version of unnumbered file";
 
-$x = `$cmd --next $td/bar/`;
+$x = `$cmd --mknext $td/bar/`;
 chop($x);
 like $x, qr/different/, "snag next dir version of file version";
 
-$x = `$cmd --next $td/bar500`;
+$x = `$cmd --mknext $td/bar500`;
 chop($x);
 is $x, "$td/bar002", "snag version 2 padded 3, low 500, pre-existing";
 
-$x = `$cmd --next $td/zaf500`;
+$x = `$cmd --mknext $td/zaf500`;
 chop($x);
 is $x, "$td/zaf500", "snag version 500 padded 3, low 500 of non-existing";
 
-$x = `$cmd --next $td/zaf1`;
+$x = `$cmd --mknext $td/zaf1`;
 chop($x);
 is $x, "$td/zaf501", "snag version 501 padded 1, low 1 of pre-existing";
 
@@ -185,7 +101,30 @@ $x = `$cmd --lslow $td/zaf1`;
 chop($x);
 is $x, "$td/zaf500", "list low version";
 
-remove_td();
-}
+$x = `$cmd --mknextcopy $td/zaf1`;
+chop($x);
+like $x, qr/pre-existing file/,
+	"snag --mknextcopy fails without pre-existing unnumbered version";
 
-#done_testing;
+$x = `$cmd $td/daffy/`;			# snag an unnumbered directory
+$x = `$cmd --mknext $td/daffy`;		# bump version number
+$x = `$cmd --mknextcopy $td/daffy`;
+like $x, qr/pre-existing.*file/,
+	"snag --mknextcopy fails because pre-existing is a directory";
+
+$x = `echo 'barfoo' > $td/farley`;	# create unnumbered file
+file_value("<$td/farley", $x);
+$x = `$cmd --mknext $td/farley`;
+
+file_value("<$td/farley1", $x);
+is $x, '', 'mknext (no copy) creates zero length file';
+
+$x = `$cmd --mknextcopy $td/farley`;
+is $x, "$td/farley2\n", 'mknextcopy creates next version';
+
+file_value("<$td/farley2", $x);
+is $x, 'barfoo', 'mknextcopy copied unnumbered version content';
+
+remove_td();
+
+}

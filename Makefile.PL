@@ -10,7 +10,7 @@ WriteMakefile(
     VERSION_FROM        => 'VERSION',
     ABSTRACT_FROM       => 'lib/File/Value.pm',
     ($ExtUtils::MakeMaker::VERSION >= 6.3002
-      ? ('LICENSE'=> 'Apache2')
+      ? ('LICENSE'=> 'BSD')
       : ()),
     PM			=> {
     	'lib/File/Value.pm'	=> 'blib/lib/File/Value.pm',
@@ -18,6 +18,7 @@ WriteMakefile(
     PL_FILES            => {},
     PREREQ_PM => {
         'Getopt::Long'	=> 0,
+        'File::Copy'	=> 0,
         'File::Glob'	=> 0,
         'Pod::Usage'	=> 0,
         'Fcntl'		=> 0,
