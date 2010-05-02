@@ -5,7 +5,7 @@ use warnings;
 
 my $script = "snag";		# script we're testing
 
-# as of 2010.04.28  (SHELL stuff, remake_td, Config perlpath minus _exe)
+# as of 2010.05.02  (perlpath minus _exe, plus filval(), no -x for MSWin)
 #### start boilerplate for script name and temporary directory support
 
 use Config;
@@ -17,7 +17,7 @@ my $bin = ($blib eq "-Mblib" ?		# path to testable script
 	"blib/script/" : "") . $script;
 my $perl = $Config{perlpath};		# perl used in testing
 my $cmd = "2>&1 $perl $blib " .		# command to run, capturing stderr
-	(-x $bin ? $bin : "../$bin") . " ";	# exit status in $? >> 8
+	(-e $bin ? $bin : "../$bin") . " ";	# exit status in $? >> 8
 
 my ($rawstatus, $status);		# "shell status" version of "is"
 sub shellst_is { my( $expected, $output, $label )=@_;
@@ -36,6 +36,18 @@ sub remove_td {		# remove $td but make sure $td isn't set to "."
 	! $td || $td eq "."	and die "bad dirname \$td=$td";
 	eval { rmtree($td); };
 	$@			and die "$td: couldn't remove: $@";
+}
+
+# Abbreviated version of "raw" File::Value::file_value()
+sub filval { my( $file, $value )=@_;	# $file must begin with >, <, or >>
+	if ($file =~ /^\s*>>?/) {
+		open(OUT, $file)	or return "$file: $!";
+		my $r = print OUT $value;
+		close(OUT);		return ($r ? '' : "write failed: $!");
+	} # If we get here, we're doing file-to-value case.
+	open(IN, $file)		or return "$file: $!";
+	local $/;		$_[1] = <IN>;	# slurp mode (entire file)
+	close(IN);		return '';
 }
 
 #### end boilerplate
