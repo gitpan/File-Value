@@ -94,8 +94,8 @@ like file_value("$td/fvtest", $x),
 '/file .*fvtest. must begin.*/', 'force use of >, <, or >>';
 
 # disallowed windows chars: $s =~ tr[<>:"/?*][.]
-is file_value(">$td/Whoa,dude+!
-  Adventures of HuckleBerry Finn", "dummy"), "", 'write to weird filename';
+is file_value(">$td/Whoa,dude+! Huck Finn", "dummy"), "",
+	'write to weird filename';
 
 file_value(">$td/fvtest", "   foo		\n\n\n");
 file_value("<$td/fvtest", $x, "raw");

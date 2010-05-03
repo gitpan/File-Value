@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                File-Value
-version:             0.22
+version:             0.23
 abstract:            snag command and routines supporting files as values
 license:             BSD
 author:              
