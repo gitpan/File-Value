@@ -5,7 +5,7 @@ use warnings;
 use strict;
 
 our $VERSION;
-$VERSION = sprintf "%s", q$Name: Release-v0.2.4$ =~ /Release-(v\d+\.\d+\.\d+)/;
+$VERSION = sprintf "%s", q$Name: Release-v0.3.0$ =~ /Release-(v\d+\.\d+\.\d+)/;
 #$VERSION = sprintf "%d.%02d", q$Name: Release-0-23 $ =~ /Release-(\d+)-(\d+)/;
 
 require Exporter;
