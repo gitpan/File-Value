@@ -52,7 +52,7 @@ sub filval { my( $file, $value )=@_;	# $file must begin with >, <, or >>
 
 #### end boilerplate
 
-use File::Value;
+use File::Value ':all';
 
 {
 remake_td();

@@ -8,7 +8,7 @@ my $VERSION = $File::Value::VERSION;
 
 use Getopt::Long qw(:config bundling_override);
 use Pod::Usage;
-use File::Value;
+use File::Value ':all';
 
 my %opt = (
 	force		=> 0,
@@ -183,10 +183,11 @@ errors result in exit status 2 and a message on stderr.
 Unlike the L<touch(1)> command, B<snag> is guaranteed to fail if the node
 exists already (exit status 1).  Because it attempts to create the node
 first and tests for existence afterwards, it is not susceptible to the
-common race condition arising when these steps are reversed.  There is an
+race condition that arises when these steps are reversed.  There is an
 exception when B<-f> (B<--force>) is given, in which case an attempt will
-be made first to remove a pre-existing node.  It is still possible to
-succeed in removing a node but to fail in capturing it.
+be made first to remove a pre-existing node; caution should be exercised
+as a race condition makes it possible to succeed in removing a node but
+to fail in re-capturing it.
 
 Versions are only relevant for the second form of the B<snag> command,
 where "version" has no other meaning than a filesytem node name that may
@@ -238,7 +239,7 @@ already as an unnumbered file.
   v4/
   $ snag --mknext v001/        # next is 5, but "001" pads to 005
   v005/
-  $ snag --mknext v001/        # "1" in "001" is first version if none
+  $ snag --mknext v001/        # "001" is first version if none
   v006/
   $ snag --mknext v001/        # but is ignored if versions exist
   v007/

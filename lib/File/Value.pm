@@ -1,37 +1,42 @@
 package File::Value;
- 
+
 use 5.006;
 use warnings;
 use strict;
 
 our $VERSION;
-$VERSION = sprintf "%d.%02d", q$Name: Release-0-23 $ =~ /Release-(\d+)-(\d+)/;
+$VERSION = sprintf "%s", q$Name: Release-v0.2.4$ =~ /Release-(v\d+\.\d+\.\d+)/;
+#$VERSION = sprintf "%d.%02d", q$Name: Release-0-23 $ =~ /Release-(\d+)-(\d+)/;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(
+
+our @EXPORT = qw();
+our @EXPORT_OK = qw(
 	file_value
+	flvl
 	list_high_version
 	list_low_version
 	snag_dir
 	snag_file
 	snag_version
+	fiso_dname
+	fiso_uname
 );
-our @EXPORT_OK = qw(
-);
+our %EXPORT_TAGS = (all => [ @EXPORT_OK ]);
 
 # if length is 0, go for it.
 #
-my $ridiculous = 4294967296;	# max length is 2^32  XXX better way?
+my $ridiculous = 4294967296;	# max length is 2**32  yyy a better way?
 
+# returns empty string on success, else error message
 sub file_value { my( $file, $value, $how, $length )=@_;
 
 	my $ret_value = \$_[1];
-	use constant OK => "";		# empty string on return means success
 
-	$file		or return "needs a file name";
+	$file		or return "must specify a file name";
 
-	# make caller be explicit about whether doing read/write/append
+	# Force caller to be explicit about whether doing read/write/append.
 	#
 	$file !~ /^\s*(<|>|>>)\s*(\S.*)/ and
 		return "file ($file) must begin with '<', '>', or '>>'";
@@ -42,9 +47,11 @@ sub file_value { my( $file, $value, $how, $length )=@_;
 	$how ne "trim" && $how ne "raw" && $how ne "untaint" and
 		return "third arg ($how) must be one of: trim, raw, or untaint";
 
-	if ($mode =~ />>?/) {	# if we're doing value-to-file (> or >>)
+	if ($mode =~ />>?/) {
+		# If we get here, we're doing value-to-file case (> or >>).
+
 		# ignore $how and $length, but we need specified $value
-		! defined($value) and
+		defined($value) or
 			return "needs a value to put in '$file'";
 		# for $how, here we only understand "trim" or "raw", but
 		# "trim" removes initial and final \n, adding one final \n
@@ -52,11 +59,11 @@ sub file_value { my( $file, $value, $how, $length )=@_;
 			$value =~ s/^\s+//s;
 			$value =~ s/\s+$/\n/s;
 		}
-		! open(OUT, $file) and
+		open(OUT, $file) or
 			return "$statfname: $!";
 		my $r = print OUT $value;
 		close(OUT);
-		return ($r ? OK : "write failed: $!");
+		return ($r ? "" : "write failed: $!");
 	}
 
 	# If we get here, we're doing file-to-value case.
@@ -69,6 +76,7 @@ sub file_value { my( $file, $value, $how, $length )=@_;
 			return "length unspecified or not an integer";
 	}
 	elsif ($statfname ne "-") {
+		# yyy tested with "-" (stdin or stdout)?
 		# no length means read whole file, but be reasonable
 		$statlength = (-s $statfname);
 		! defined($statlength) and
@@ -80,7 +88,7 @@ sub file_value { my( $file, $value, $how, $length )=@_;
 		$length = $ridiculous;
 	}
 
-	! open(IN, $file) and
+	open(IN, $file) or
 		return "$statfname: $!";
 	if ($go_for_it) {		# don't be reasonable about length
 		local $/;
@@ -88,13 +96,17 @@ sub file_value { my( $file, $value, $how, $length )=@_;
 		close(IN);
 	}
 	else {
-		my $n = read(IN, $$ret_value, $length);
+		my ($offset, $n) = (0, 0);
+		# Ask for the whole $length but be prepared not to get it.
+		1 while ($n = read(IN, $$ret_value, $length, $offset))
+				# yyy and print("offset=$offset\n")
+				and $n > 0 and ($offset += $n) < $length;
 		close(IN);
 		! defined($n) and
 			return "$statfname: failed to read $length bytes: $!";
-		# XXXX do we have to read in a loop until all bytes come in?
 		return "$statfname: read fewer bytes than expected"
-			if (defined($statlength) && $n < $statlength);
+			if (defined($statlength) && $offset < $statlength);
+			#if (defined($statlength) && $n < $statlength);
 	}
 
 	if ($how eq "trim") {
@@ -108,7 +120,89 @@ sub file_value { my( $file, $value, $how, $length )=@_;
 	}
 	# elsif ($how eq "raw") { then no further processing }
 
-	return OK;
+	return "";
+}
+
+# Faster simpler cruder version of file_value(), just in case.
+#
+sub flvl { my( $file, $value )=@_;	# $file must begin with >, <, or >>
+
+	if ($file =~ /^\s*>>?/) {
+		open(OUT, $file)	or return "$file: $!";
+		my $r = print OUT $value;
+		close(OUT);		return ($r ? '' : "write failed: $!");
+	}
+
+	# If we get here, we're doing file-to-value case.
+	open(IN, $file)		or return "$file: $!";
+	local $/;		$_[1] = <IN>;	# slurp mode (entire file)
+	close(IN);		return '';
+}
+
+# Return the full normalized name of a filesystem-based object that can
+# legitimately be specified either by its enclosing directory name or
+# by the directory name plus something in that directory.  Useful when
+# a user could correctly say 'myobj' or 'myobj/minter.bdb' but we will
+# eventually need the longer form to test existence or create the object.
+#
+# It's important (eg, find_minder) that existence of enclosing directory
+# not be mistaken for existence of the object, since creating that dir
+# by itself (eg, with 'snag') could be a good way of reserving the minder
+# that you are _about_ to create.
+#
+# Need this when the user will be specifying the location of an object
+# that's defined by both an enclosing directory $base and a well-known
+# file or directory $last under $base.  It is valid for the user to say
+# either $base/$last or $base, but an existence test against $base/$last
+# is what we need to perform to verify whether it's a legitimate object,
+# with some tedious special cases when $base is '/' or '.'.  Typical use
+# cases: user specifies "pairtree_root", "ptname", "ptname/pairtree_root",
+# "mintername/", or "mintername/minter.bdb".
+#
+# Lengthen base path with last component according to the table, normalizing
+# multiple slashes between $base and $last.  Useful to get tedious details
+# right and when path may already have the last component on it (in which
+# case we don't want it there twice).  Removes final slashes from $last.
+#
+# 	$base		$last		Returns
+#  1.	/		bar		/bar
+#  2.	.		bar		bar
+#  3.	foo		bar		foo/bar
+#  4.	foo/		bar		foo/bar
+#  5.	foo/bar		bar		foo/bar
+#  6.	bar		bar		bar
+#
+# xxx may not port to Windows due to use of explicit slashes (/)
+# XXXXXX probably should use File::Spec
+# xxx do some test cases for this
+# xxx was called prep_file in pt script
+# FISO = FIle System Object
+# dname = "down" name (full name with descender, suitable for -X tests)
+# uname = "up" name (upper name without descender, still unique, suitable
+#         for communicating with users)
+sub fiso_dname { my( $base, $last )=@_;
+
+	$last =~ s{/*(.*)/*$}{$1};	# remove bounding slashes
+	return "/$last"		if $base =~ m{^/+$};	# case 1 eliminated
+	$base =~ s{/+$}{};		# remove trailing slashes
+	return "$last"		if $base =~ m{^\./*$};	# case 2 eliminated
+	return "$base/$last"	if $base !~ m{$last$};	# cases 3-4 gone
+	return "$last"		if $base =~ m{^$last$};	# case 6 eliminated
+	$base =~ s{/*$last$}{};		# remove $last and preceding slashes
+	return "$base/$last";				# case 5 eliminated
+}
+
+# Return parent with trailing slash intact.
+# xxx This needs to work closely with fiso_dname
+# XXXXX make this portable, or does it already work?
+#
+sub fiso_uname { ( $_ )=@_;
+
+	return "/"		if m,^/+$,;
+	return "./"		if m,^\./*$,;
+	s,[^/]+/*$,,;		# final / means this fiso_dname was a dir? yyy
+	return "./"		if m,^$,;
+	return $_;
 }
 
 use File::Glob ':glob';		# standard use of module, which we need

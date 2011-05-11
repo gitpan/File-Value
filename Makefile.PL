@@ -8,8 +8,8 @@ WriteMakefile(
     NAME                => 'File::Value',
     AUTHOR              => 'John A. Kunze <jak@ucop.edu>',
     VERSION_FROM        => 'VERSION',
-    ABSTRACT            => 'snag command and routines supporting files as values',
-    ($ExtUtils::MakeMaker::VERSION >= 6.3002
+    ABSTRACT            => 'snag (command) and routines supporting files as values',
+    ($ExtUtils::MakeMaker::VERSION ge 6.3002
       ? ('LICENSE'=> 'BSD')
       : ()),
     PM			=> {

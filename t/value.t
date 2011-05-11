@@ -52,7 +52,7 @@ sub filval { my( $file, $value )=@_;	# $file must begin with >, <, or >>
 
 #### end boilerplate
 
-use File::Value;
+use File::Value ':all';
 
 {	# file_value tests
 
@@ -101,6 +101,9 @@ file_value(">$td/fvtest", "   foo		\n\n\n");
 file_value("<$td/fvtest", $x, "raw");
 is $x, "foo\n", 'trim on write';
 
-remove_td();
+is file_value(">$td/fvtest", "abcdefghij" x 40000), "", 'wrote large file';
+is file_value("<$td/fvtest", $x, "raw"), "", 'read large file';
+is length($x), 400000, 'scaled up to 400Kb value';
 
+remove_td();
 }
