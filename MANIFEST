@@ -4,6 +4,7 @@ Makefile.PL
 MANIFEST
 README
 snag
+t/fiso.t
 t/snag.t
 t/value.t
 VERSION
