@@ -5,8 +5,8 @@ use warnings;
 use strict;
 
 our $VERSION;
-$VERSION = sprintf "%s", q$Name: Release-v0.250.0$ =~ /Release-(v\d+\.\d+\.\d+)/;
-#$VERSION = sprintf "%d.%02d", q$Name: Release-0-23 $ =~ /Release-(\d+)-(\d+)/;
+$VERSION = sprintf "%d.%02d", q$Name: Release-1-0 $ =~ /Release-(\d+)-(\d+)/;
+#$VERSION = sprintf "%s", q$Name: Release-v0.250.0$ =~ /Release-(v\d+\.\d+\.\d+)/;
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -171,6 +171,8 @@ sub flvl { my( $file, $value )=@_;	# $file must begin with >, <, or >>
 #  4.	foo/		bar		foo/bar
 #  5.	foo/bar		bar		foo/bar
 #  6.	bar		bar		bar
+#  7.	""		bar		bar
+#  8.	foo		""		foo
 #
 # xxx may not port to Windows due to use of explicit slashes (/)
 # XXXXXX probably should use File::Spec
@@ -182,6 +184,8 @@ sub flvl { my( $file, $value )=@_;	# $file must begin with >, <, or >>
 #         for communicating with users)
 sub fiso_dname { my( $base, $last )=@_;
 
+	return (($base || "") . ($last || ""))
+		unless ($base and $last);		# cases 7-8 gone
 	$last =~ s{/*(.*)/*$}{$1};	# remove bounding slashes
 	return "/$last"		if $base =~ m{^/+$};	# case 1 eliminated
 	$base =~ s{/+$}{};		# remove trailing slashes
@@ -192,17 +196,20 @@ sub fiso_dname { my( $base, $last )=@_;
 	return "$base/$last";				# case 5 eliminated
 }
 
-# Return parent with trailing slash intact.
+# Return parent of $oname (object name) with trailing slash intact.
 # xxx This needs to work closely with fiso_dname
 # XXXXX make this portable, or does it already work?
 #
-sub fiso_uname { ( $_ )=@_;
+sub fiso_uname { my( $oname )=@_;
 
-	return "/"		if m,^/+$,;
-	return "./"		if m,^\./*$,;
-	s,[^/]+/*$,,;		# final / means this fiso_dname was a dir? yyy
-	return "./"		if m,^$,;
-	return $_;
+	return ""		unless $oname;
+	return "/"		if $oname =~ m,^/+$,;
+	return "./"		if $oname =~ m,^\./*$,;
+		# next assumes $oname was a directory?
+		# final / means this fiso_dname was a dir? yyy
+	$oname =~ s,[^/]+/*$,,;	
+	return "./"		if $oname =~ m,^$,;
+	return $oname;
 }
 
 use File::Glob ':glob';		# standard use of module, which we need

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               File-Value
-version:            v0.250.0
+version:            1.0
 abstract:           snag (command) and routines supporting files as values
 author:
     - John A. Kunze <jak@ucop.edu>

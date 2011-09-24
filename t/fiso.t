@@ -63,6 +63,8 @@ use File::Value ':all';
 #  4.	foo/		bar		foo/bar
 #  5.	foo/bar		bar		foo/bar
 #  6.	bar		bar		bar
+#  7.	""		bar		bar
+#  8.	foo		""		foo
 #
 # xxx may not port to Windows due to use of explicit slashes (/)
 # XXXXXX probably should use File::Spec
@@ -84,6 +86,8 @@ is fiso_dname("foo/bar", "bar"), "foo/bar", 'case 5';
 is fiso_dname("foo//bar", "bar"), "foo/bar", 'case 5 extra /';
 is fiso_dname("bar", "bar"), "bar", 'case 6';
 is fiso_dname("/bar", "bar"), "/bar", 'case 6 with initial /';
+is fiso_dname("", "bar"), "bar", 'case 7';
+is fiso_dname("foo", undef), "foo", 'case 8';
 
 is fiso_uname("/"), "/", 'root alone';
 is fiso_uname("//"), "/", 'root doubled';
@@ -91,5 +95,7 @@ is fiso_uname("foo/bar/"), "foo/", 'dname was a dir';
 is fiso_uname("foo/"), "./", 'dname was short dir';
 is fiso_uname("foo/bar"), "foo/", 'dir with descender';
 is fiso_uname("foo"), "./", 'no dir';
+is fiso_uname(""), "", 'arg is an empty string';
+is fiso_uname(undef), "", 'arg is undefined ';
 
 }
