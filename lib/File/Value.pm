@@ -1,3 +1,14 @@
+# To do: change default behavior and add options:
+#        snag foo -> defaults to:
+#		--mknextcopy for file if it exists, else snag_file
+#		--mknext for dir if it exists, else snag_dir
+#     add options:  --noversion, --dir (default is 'file'), --nocopy
+# Add list of regexs and substitutions for versions, esp. so that
+#  after foo.txt comes foo_1.txt instead of foo.txt_1; order is preference:
+#     qr/[-_]?(\d+)(\.[a-z]*)?$/, etc.
+#  also check for case of foo_\d{4,6} which is a date be prepared to use
+#   today's date for next version
+#
 package File::Value;
 
 use 5.006;
@@ -5,7 +16,7 @@ use warnings;
 use strict;
 
 our $VERSION;
-$VERSION = sprintf "%d.%02d", q$Name: Release-1-0 $ =~ /Release-(\d+)-(\d+)/;
+$VERSION = sprintf "%d.%02d", q$Name: Release-1-01 $ =~ /Release-(\d+)-(\d+)/;
 #$VERSION = sprintf "%s", q$Name: Release-v0.250.0$ =~ /Release-(v\d+\.\d+\.\d+)/;
 
 require Exporter;
@@ -139,6 +150,13 @@ sub flvl { my( $file, $value )=@_;	# $file must begin with >, <, or >>
 	close(IN);		return '';
 }
 
+use File::Spec;
+
+our $Win;			# whether we're running on Windows
+defined($Win) or	# if we're on a Windows platform avoid -l
+	$Win = grep(/Win32|OS2/i, @File::Spec::ISA);
+our $B = $Win ? '\\' : '/';	# short name for boundary
+
 # Return the full normalized name of a filesystem-based object that can
 # legitimately be specified either by its enclosing directory name or
 # by the directory name plus something in that directory.  Useful when
@@ -174,9 +192,7 @@ sub flvl { my( $file, $value )=@_;	# $file must begin with >, <, or >>
 #  7.	""		bar		bar
 #  8.	foo		""		foo
 #
-# xxx may not port to Windows due to use of explicit slashes (/)
-# XXXXXX probably should use File::Spec
-# xxx do some test cases for this
+# xxx may not port to Windows for the root cases
 # xxx was called prep_file in pt script
 # FISO = FIle System Object
 # dname = "down" name (full name with descender, suitable for -X tests)
@@ -186,29 +202,28 @@ sub fiso_dname { my( $base, $last )=@_;
 
 	return (($base || "") . ($last || ""))
 		unless ($base and $last);		# cases 7-8 gone
-	$last =~ s{/*(.*)/*$}{$1};	# remove bounding slashes
-	return "/$last"		if $base =~ m{^/+$};	# case 1 eliminated
-	$base =~ s{/+$}{};		# remove trailing slashes
-	return "$last"		if $base =~ m{^\./*$};	# case 2 eliminated
-	return "$base/$last"	if $base !~ m{$last$};	# cases 3-4 gone
+	$last =~ s{${B}*(.*)${B}*$}{$1}o;	# remove bounding slashes
+	return "${B}$last"		if $base =~ m{^${B}+$}o;	# case 1 eliminated
+	$base =~ s{${B}+$}{}o;		# remove trailing slashes
+	return "$last"		if $base =~ m{^\.${B}*$}o;	# case 2 eliminated
+	return "$base${B}$last"	if $base !~ m{$last$};	# cases 3-4 gone
 	return "$last"		if $base =~ m{^$last$};	# case 6 eliminated
-	$base =~ s{/*$last$}{};		# remove $last and preceding slashes
-	return "$base/$last";				# case 5 eliminated
+	$base =~ s{${B}*$last$}{};		# remove $last and preceding slashes
+	return "$base${B}$last";				# case 5 eliminated
 }
 
 # Return parent of $oname (object name) with trailing slash intact.
 # xxx This needs to work closely with fiso_dname
-# XXXXX make this portable, or does it already work?
 #
 sub fiso_uname { my( $oname )=@_;
 
 	return ""		unless $oname;
-	return "/"		if $oname =~ m,^/+$,;
-	return "./"		if $oname =~ m,^\./*$,;
+	return "${B}"		if $oname =~ m,^${B}+$,o;
+	return ".${B}"		if $oname =~ m,^\.${B}*$,o;
 		# next assumes $oname was a directory?
 		# final / means this fiso_dname was a dir? yyy
-	$oname =~ s,[^/]+/*$,,;	
-	return "./"		if $oname =~ m,^$,;
+	$oname =~ s,[^${B}]+${B}*$,,o;	
+	return ".${B}"		if $oname =~ m,^$,;
 	return $oname;
 }
 

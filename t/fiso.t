@@ -66,36 +66,36 @@ use File::Value ':all';
 #  7.	""		bar		bar
 #  8.	foo		""		foo
 #
-# xxx may not port to Windows due to use of explicit slashes (/)
-# XXXXXX probably should use File::Spec
-# xxx do some test cases for this
 # xxx was called prep_file in pt script
 # FISO = FIle System Object
 # dname = "down" name (full name with descender, suitable for -X tests)
 # uname = "up" name (upper name without descender, still unique, suitable
 #         for communicating with users)
 
-is fiso_dname("/", "bar"), "/bar", 'case 1';
-is fiso_dname("//", "bar"), "/bar", 'case 1 extra /';
-is fiso_dname(".", "bar"), "bar", 'case 2';
-is fiso_dname("./", "bar"), "bar", 'case 2 with /';
-is fiso_dname("foo", "bar"), "foo/bar", 'case 3';
-is fiso_dname("foo/", "bar"), "foo/bar", 'case 4';
-is fiso_dname("foo//", "bar"), "foo/bar", 'case 4 extra /';
-is fiso_dname("foo/bar", "bar"), "foo/bar", 'case 5';
-is fiso_dname("foo//bar", "bar"), "foo/bar", 'case 5 extra /';
-is fiso_dname("bar", "bar"), "bar", 'case 6';
-is fiso_dname("/bar", "bar"), "/bar", 'case 6 with initial /';
-is fiso_dname("", "bar"), "bar", 'case 7';
-is fiso_dname("foo", undef), "foo", 'case 8';
+# xxx may not port to Windows for the root cases
+my $B = $File::Value::B;	# portability to Windows
 
-is fiso_uname("/"), "/", 'root alone';
-is fiso_uname("//"), "/", 'root doubled';
-is fiso_uname("foo/bar/"), "foo/", 'dname was a dir';
-is fiso_uname("foo/"), "./", 'dname was short dir';
-is fiso_uname("foo/bar"), "foo/", 'dir with descender';
-is fiso_uname("foo"), "./", 'no dir';
-is fiso_uname(""), "", 'arg is an empty string';
-is fiso_uname(undef), "", 'arg is undefined ';
+is fiso_dname("${B}", "bar"), "${B}bar", "case 1";
+is fiso_dname("${B}${B}", "bar"), "${B}bar", "case 1 extra ${B}";
+is fiso_dname(".", "bar"), "bar", "case 2";
+is fiso_dname(".${B}", "bar"), "bar", "case 2 with ${B}";
+is fiso_dname("foo", "bar"), "foo${B}bar", "case 3";
+is fiso_dname("foo${B}", "bar"), "foo${B}bar", "case 4";
+is fiso_dname("foo${B}${B}", "bar"), "foo${B}bar", "case 4 extra ${B}";
+is fiso_dname("foo${B}bar", "bar"), "foo${B}bar", "case 5";
+is fiso_dname("foo${B}${B}bar", "bar"), "foo${B}bar", "case 5 extra ${B}";
+is fiso_dname("bar", "bar"), "bar", "case 6";
+is fiso_dname("${B}bar", "bar"), "${B}bar", "case 6 with initial ${B}";
+is fiso_dname("", "bar"), "bar", "case 7";
+is fiso_dname("foo", undef), "foo", "case 8";
+
+is fiso_uname("${B}"), "${B}", "root alone";
+is fiso_uname("${B}${B}"), "${B}", "root doubled";
+is fiso_uname("foo${B}bar${B}"), "foo${B}", "dname was a dir";
+is fiso_uname("foo${B}"), ".${B}", "dname was short dir";
+is fiso_uname("foo${B}bar"), "foo${B}", "dir with descender";
+is fiso_uname("foo"), ".${B}", "no dir";
+is fiso_uname(""), "", "arg is an empty string";
+is fiso_uname(undef), "", "arg is undefined";
 
 }
