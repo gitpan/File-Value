@@ -76,6 +76,8 @@ use File::Value ':all';
 my $B = $File::Value::B;	# portability to Windows
 
 is fiso_dname("${B}", "bar"), "${B}bar", "case 1";
+	print "XXX case 1=", fiso_dname("${B}", "bar"), "\n";
+
 is fiso_dname("${B}${B}", "bar"), "${B}bar", "case 1 extra ${B}";
 is fiso_dname(".", "bar"), "bar", "case 2";
 is fiso_dname(".${B}", "bar"), "bar", "case 2 with ${B}";

@@ -16,8 +16,7 @@ use warnings;
 use strict;
 
 our $VERSION;
-$VERSION = sprintf "%d.%02d", q$Name: Release-1-01 $ =~ /Release-(\d+)-(\d+)/;
-#$VERSION = sprintf "%s", q$Name: Release-v0.250.0$ =~ /Release-(v\d+\.\d+\.\d+)/;
+$VERSION = sprintf "%d.%02d", q$Name: Release-1-02 $ =~ /Release-(\d+)-(\d+)/;
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -155,7 +154,17 @@ use File::Spec;
 our $Win;			# whether we're running on Windows
 defined($Win) or	# if we're on a Windows platform avoid -l
 	$Win = grep(/Win32|OS2/i, @File::Spec::ISA);
-our $B = $Win ? '\\' : '/';	# short name for boundary
+our ($B, $C);	# short names for boundary char for output (B) and regexes (C)
+#our $B = $Win ? '\\\\' : '/';	# short name for boundary (\) in regexes
+$Win and
+	$B = '\\',
+	$C = $B.$B,
+1
+or
+	$B = $C = '/';
+;
+#$B = '\\';
+#$C = $B.$B;			#
 
 # Return the full normalized name of a filesystem-based object that can
 # legitimately be specified either by its enclosing directory name or
@@ -192,8 +201,8 @@ our $B = $Win ? '\\' : '/';	# short name for boundary
 #  7.	""		bar		bar
 #  8.	foo		""		foo
 #
-# xxx may not port to Windows for the root cases
-# xxx was called prep_file in pt script
+# yyy might not port to Windows for the root directory cases
+# yyy was called prep_file in pt script
 # FISO = FIle System Object
 # dname = "down" name (full name with descender, suitable for -X tests)
 # uname = "up" name (upper name without descender, still unique, suitable
@@ -201,15 +210,15 @@ our $B = $Win ? '\\' : '/';	# short name for boundary
 sub fiso_dname { my( $base, $last )=@_;
 
 	return (($base || "") . ($last || ""))
-		unless ($base and $last);		# cases 7-8 gone
-	$last =~ s{${B}*(.*)${B}*$}{$1}o;	# remove bounding slashes
-	return "${B}$last"		if $base =~ m{^${B}+$}o;	# case 1 eliminated
-	$base =~ s{${B}+$}{}o;		# remove trailing slashes
-	return "$last"		if $base =~ m{^\.${B}*$}o;	# case 2 eliminated
+		unless ($base and $last);			# cases 7-8 done
+	$last =~ s{${C}*(.*)${C}*$}{$1}o;	# remove bounding slashes
+	return "${B}$last"	if $base =~ m{^${C}+$}o;	# case 1 done
+	$base =~ s{${C}+$}{}o;		# remove trailing slashes
+	return "$last"		if $base =~ m{^\.${C}*$}o;	# case 2 done
 	return "$base${B}$last"	if $base !~ m{$last$};	# cases 3-4 gone
 	return "$last"		if $base =~ m{^$last$};	# case 6 eliminated
-	$base =~ s{${B}*$last$}{};		# remove $last and preceding slashes
-	return "$base${B}$last";				# case 5 eliminated
+	$base =~ s{${C}*$last$}{};	# remove $last and preceding slashes
+	return "$base${B}$last";				# case 5 done
 }
 
 # Return parent of $oname (object name) with trailing slash intact.
@@ -218,11 +227,11 @@ sub fiso_dname { my( $base, $last )=@_;
 sub fiso_uname { my( $oname )=@_;
 
 	return ""		unless $oname;
-	return "${B}"		if $oname =~ m,^${B}+$,o;
-	return ".${B}"		if $oname =~ m,^\.${B}*$,o;
+	return "${B}"		if $oname =~ m,^${C}+$,o;
+	return ".${B}"		if $oname =~ m,^\.${C}*$,o;
 		# next assumes $oname was a directory?
 		# final / means this fiso_dname was a dir? yyy
-	$oname =~ s,[^${B}]+${B}*$,,o;	
+	$oname =~ s,[^${C}]+${C}*$,,o;	
 	return ".${B}"		if $oname =~ m,^$,;
 	return $oname;
 }
